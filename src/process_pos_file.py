@@ -1,3 +1,9 @@
+from frequency_table import FrequencyTable
+
+START_TAG = 'begin_sentence'
+END_TAG = 'end_sentence'
+NO_TAG = ''
+
 def process_pos_file(pos_filename):
     pos_word_table = FrequencyTable()
     transition_table = FrequencyTable()
