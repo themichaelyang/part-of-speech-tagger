@@ -18,9 +18,10 @@ class Tagger:
 
         self.pos_tags = [*self.pos_word_table.table]
 
-        self.words = set()
+        self.vocab = set()
+        self.oov = set()
         for pos in self.pos_tags:
-            self.words.update(self.pos_word_table.table[pos])
+            self.vocab.update(self.pos_word_table.table[pos])
 
         self.pos_tags += [START_TAG, END_TAG]
 
@@ -31,22 +32,29 @@ class Tagger:
             for i in range(len(tags)):
                 tagged_sentence.append((sentence[i], tags[i]))
             yield tagged_sentence
+        print(self.oov)
 
     def tag_sentence(self, sentence):
+        if len(sentence) == 0:
+            raise Exception('empty sentence!')
+
         self.sentence = sentence
         viterbi = { tag: [0]*len(sentence) for tag in self.pos_tags } # viterbi[pos][index]
         previous = { tag: [NO_TAG]*len(sentence) for tag in self.pos_tags }
 
         # init with start tag
         for tag in self.pos_tags:
-            viterbi[tag][0] = self.trans_prob(START_TAG, tag) * self.emit_prob(tag, sentence[0].lower())
+            word = sentence[0].lower()
+            viterbi[tag][0] = self.trans_prob(START_TAG, tag) * self.emit_prob(tag, word)
             previous[tag][0] = START_TAG
 
         # rest of the sentence
         length = len(sentence)
         for index in range(1, length):
+            is_zero = True
+            word = sentence[index].lower()
+
             for tag in self.pos_tags:
-                word = sentence[index].lower()
                 max_score = 0
                 best_prev_tag = NO_TAG
 
@@ -56,19 +64,26 @@ class Tagger:
                     if score > max_score:
                         max_score = score
                         best_prev_tag = prev_tag
-
-
-                # # fall back to unigram
-                # if max_score == 0:
-                #     for prev_tag in self.pos_tags:
-                #         score = viterbi[prev_tag][index - 1] * self.unigram_prob(tag) * self.emit_prob(tag, word)
-                #
-                #         if score > max_score:
-                #             max_score = score
-                #             best_prev_tag = prev_tag
+                        is_zero = False
 
                 viterbi[tag][index] = max_score
                 previous[tag][index] = best_prev_tag
+
+            if is_zero:
+                max_score = 0
+                best_prev_tag = NO_TAG
+
+                print('Failed on: ' + word)
+                for tag in self.pos_tags:
+                    score = viterbi[prev_tag][index - 1]
+
+                    if score > max_score:
+                        max_score = score
+                        best_prev_tag = prev_tag
+
+                viterbi[tag][index] = max_score
+                previous[tag][index] = best_prev_tag
+
 
         # find the best tags with end tag
         final_score = 0
@@ -80,16 +95,12 @@ class Tagger:
                 final_score = score
                 final_prev = tag
 
-        # if final_prev == NO_TAG:
-        #     for tag in self.pos_tags:
-        #         score = viterbi[tag][length - 1]
-        #         if score > final_score:
-        #             final_score = score
-        #             final_prev = tag
-
-        # print(viterbi)
-        # print()
-        # print(previous)
+        if final_score == 0:
+            for tag in self.pos_tags:
+                score = viterbi[tag][length - 1]
+                if score > final_score:
+                    final_score = score
+                    final_prev = tag
 
         return self.backtrack(final_prev, previous, length)
 
@@ -119,8 +130,18 @@ class Tagger:
     def trans_prob(self, prev_pos, pos):
         return self.transition_table.get_prob(prev_pos, pos)
 
+    def emit_prob(self, pos, word):
+        # check if word is in vocabulary
+        if word in self.vocab:
+            return self.pos_word_table.get_prob(pos, word)
+        else:
+            # handle OOV words
+            self.oov.update(word)
+
+            if any(char.isdigit() for char in word) and pos == 'CD':
+                return 0.75
+
+            return self.unigram_prob(pos)
+
     def unigram_prob(self, pos):
         return self.pos_word_table.get_unigram_prob(pos)
-
-    def emit_prob(self, pos, word):
-        return self.pos_word_table.get_prob(pos, word)

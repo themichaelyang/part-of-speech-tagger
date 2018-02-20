@@ -3,10 +3,11 @@ from process_pos_file import process_pos_file
 from read_words_file import read_words_file
 
 
-train = 'tests/WSJ_24.pos'
-test = 'tests/test2.words'
+train = 'training/training.pos'
+test = 'tests/WSJ_23.words'
+# test = 'tests/test5.words'
+# test = 'tests/rest.words'
 out = 'tests/my1532.pos'
-sol = 'tests/WSJ_24.pos'
 
 
 def tag_file(training_filename, input_filename, output_filename):

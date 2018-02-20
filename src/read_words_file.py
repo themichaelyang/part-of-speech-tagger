@@ -9,6 +9,8 @@ def read_words_file(words_filename):
             else:
                 sentences.append(current_sentence)
                 current_sentence = []
-        sentences.append(current_sentence)
+
+        if len(current_sentence) > 0:
+            sentences.append(current_sentence)
 
     return sentences
