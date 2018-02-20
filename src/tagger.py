@@ -1,6 +1,9 @@
 from tags import *
 
 
+debug = False
+
+
 class Tagger:
     def __init__(self, pos_word_table, transition_table):
 
@@ -25,7 +28,8 @@ class Tagger:
             for i in range(len(tags)):
                 tagged_sentence.append((sentence[i], tags[i]))
             yield tagged_sentence
-        print(self.oov)
+
+        debug_print(self.oov)
 
     def tag_sentence(self, sentence):
         if len(sentence) == 0:
@@ -66,7 +70,7 @@ class Tagger:
                 max_score = 0
                 best_prev_tag = NO_TAG
 
-                print('Failed on: ' + word)
+                debug_print('Failed on: ' + word)
 
                 # for tag in self.pos_tags:
                 #     score = viterbi[prev_tag][index - 1] * self.unigram_prob(tag)
@@ -98,8 +102,8 @@ class Tagger:
         if not final_prev == NO_TAG:
             return self.backtrack(final_prev, previous, length)
         else:
-            print('failed: ')
-            print(sentence)
+            debug_print('failed: ')
+            debug_print(sentence)
             # print(viterbi)
             # print()
             # print(previous)
@@ -175,3 +179,8 @@ class Tagger:
             return word.lower()
         else:
             return word
+
+
+def debug_print(string):
+    if debug:
+        print(string)
