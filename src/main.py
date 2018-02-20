@@ -2,8 +2,9 @@ from tagger import Tagger
 from process_pos_file import process_pos_file
 from read_words_file import read_words_file
 
-train = 'tests/WSJ_02-21.pos'
-test = 'tests/WSJ_24.words'
+
+train = 'tests/WSJ_24.pos'
+test = 'tests/test2.words'
 out = 'tests/my1532.pos'
 sol = 'tests/WSJ_24.pos'
 
