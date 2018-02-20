@@ -7,8 +7,6 @@
 # - empty line (begin_sentence, end_sentence)
 # - end of file (end_sentence)
 
-from process_pos_file import process_pos_file
-from read_words_file import read_words_file
 from tags import *
 
 
@@ -47,7 +45,7 @@ class Tagger:
         length = len(sentence)
         for index in range(1, length):
             for tag in self.pos_tags:
-                word = sentence[index]
+                word = sentence[index].lower()
                 max_score = 0
                 best_prev_tag = NO_TAG
 
@@ -98,13 +96,3 @@ class Tagger:
 
     def emit_prob(self, pos, word):
         return self.pos_word_table.get_prob(pos, word)
-
-
-sentences = read_words_file('sentence.words')
-tagger = Tagger(*process_pos_file('WSJ_24.pos'))
-
-print('Tagged sentence:')
-for tagged_sentence in tagger.tag(sentences):
-    for tagged in tagged_sentence:
-        print(*tagged)
-    print()

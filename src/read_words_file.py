@@ -5,7 +5,7 @@ def read_words_file(words_filename):
     with open(words_filename, 'r') as words_file:
         for line in words_file:
             if not line.isspace():
-                current_sentence.append(line.strip().lower())
+                current_sentence.append(line.strip())
             else:
                 sentences.append(current_sentence)
                 current_sentence = []
