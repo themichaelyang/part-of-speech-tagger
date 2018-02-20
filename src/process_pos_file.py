@@ -1,8 +1,5 @@
 from frequency_table import FrequencyTable
-
-START_TAG = 'begin_sentence'
-END_TAG = 'end_sentence'
-NO_TAG = ''
+from tags import *
 
 def process_pos_file(pos_filename):
     pos_word_table = FrequencyTable()

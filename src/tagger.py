@@ -9,17 +9,11 @@
 
 from process_pos_file import process_pos_file
 from read_words_file import read_words_file
-import math
-
-
-START_TAG = 'begin_sentence'
-END_TAG = 'end_sentence'
-NO_TAG = ''
+from tags import *
 
 
 class Tagger:
-    def __init__(self, pos_filename):
-        (pos_word_table, transition_table) = process_pos_file(pos_filename)
+    def __init__(self, pos_word_table, transition_table):
 
         self.pos_word_table = pos_word_table
         self.transition_table = transition_table
@@ -31,6 +25,14 @@ class Tagger:
             self.words.update(self.pos_word_table.table[pos])
 
         self.pos_tags += [START_TAG, END_TAG]
+
+    def tag(self, sentences):
+        for sentence in sentences:
+            tagged_sentence = []
+            tags = self.tag_sentence(sentence)
+            for i in range(len(tags)):
+                tagged_sentence.append((sentence[i], tags[i]))
+            yield tagged_sentence
 
     def tag_sentence(self, sentence):
         viterbi = { tag: [0]*len(sentence) for tag in self.pos_tags } # viterbi[pos][index]
@@ -52,18 +54,12 @@ class Tagger:
                 for prev_tag in self.pos_tags:
                     score = viterbi[prev_tag][index - 1] * self.likelihood(tag, prev_tag, word)
 
-                    if score != 0:
-                        print(word, prev_tag, tag, score)
-
                     if score > max_score:
                         max_score = score
                         best_prev_tag = prev_tag
 
                 viterbi[tag][index] = max_score
                 previous[tag][index] = best_prev_tag
-
-        print(viterbi)
-        print(previous)
 
         # find the best tags with end tag
         final_score = 0
@@ -92,8 +88,8 @@ class Tagger:
         return path
 
     def likelihood(self, pos, prev_pos, word):
-        pos_given_prev = self.transition_table.get_prob(prev_pos, pos)
-        pos_given_word = self.pos_word_table.get_prob(pos, word)
+        pos_given_prev = self.trans_prob(prev_pos, pos)
+        pos_given_word = self.emit_prob(pos, word)
 
         return (pos_given_prev * pos_given_word)
 
@@ -103,18 +99,12 @@ class Tagger:
     def emit_prob(self, pos, word):
         return self.pos_word_table.get_prob(pos, word)
 
+
 sentences = read_words_file('sentence.words')
-tagger = Tagger('WSJ_24.pos')
-
-print('Sentence:')
-print(' '.join(sentences[0]))
-print(len(sentences[0]))
-
-print('Tags:')
-tags = tagger.tag_sentence(sentences[0])
-print(tags)
-# print(len(tags))
+tagger = Tagger(*process_pos_file('WSJ_24.pos'))
 
 print('Tagged sentence:')
-for i in range(len(sentences[0])):
-    print(sentences[0][i] + '\t' + tags[i])
+for tagged_sentence in tagger.tag(sentences):
+    for tagged in tagged_sentence:
+        print(*tagged)
+    print()
