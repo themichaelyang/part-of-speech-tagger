@@ -8,6 +8,8 @@
 # - end of file (end_sentence)
 
 from process_pos_file import process_pos_file
+from read_words_file import read_words_file
+import math
 
 
 START_TAG = 'begin_sentence'
@@ -30,100 +32,79 @@ class Tagger:
 
         self.pos_tags += [START_TAG, END_TAG]
 
-        # print(self.words)
-
     def tag_sentence(self, sentence):
         viterbi = { tag: [0]*len(sentence) for tag in self.pos_tags } # viterbi[pos][index]
-        backpointer = { tag: [NO_TAG]*len(sentence) for tag in self.pos_tags }
+        previous = { tag: [NO_TAG]*len(sentence) for tag in self.pos_tags }
 
-        # init
-        for pos in self.pos_tags:
-            viterbi[pos][0] = self.likelihood(pos, START_TAG, sentence[0])
-            backpointer[pos][0] = START_TAG
+        # init with start tag
+        for tag in self.pos_tags:
+            viterbi[tag][0] = self.trans_prob(START_TAG, tag) * self.emit_prob(tag, sentence[0])
+            previous[tag][0] = START_TAG
 
-        # print(backpointer)
+        # rest of the sentence
+        length = len(sentence)
+        for index in range(1, length):
+            for tag in self.pos_tags:
+                word = sentence[index]
+                max_score = 0
+                best_prev_tag = NO_TAG
 
-        # find max scores
-        for word_index in range(1, len(sentence)):
-            for pos in self.pos_tags:
+                for prev_tag in self.pos_tags:
+                    score = viterbi[prev_tag][index - 1] * self.likelihood(tag, prev_tag, word)
 
-                if self.in_vocab(sentence[word_index]):
-                    (max_score, max_prev_pos) = self.max_likelihood(pos, sentence[word_index])
-                    viterbi[pos][word_index] = max_score
-                    backpointer[pos][word_index] = max_prev_pos
-                    # print(max_score)
-                else:
-                    print(sentence[word_index])
-                    raise Exception('OOV word')
+                    if score != 0:
+                        print(word, prev_tag, tag, score)
 
-        last = len(sentence) - 1
-        (best_score, backpointer[END_TAG][last]) = self.max_likelihood(END_TAG, sentence[last])
+                    if score > max_score:
+                        max_score = score
+                        best_prev_tag = prev_tag
 
-        print(backpointer)
+                viterbi[tag][index] = max_score
+                previous[tag][index] = best_prev_tag
 
-        return self.retrace(backpointer, END_TAG, last)
+        print(viterbi)
+        print(previous)
 
-    def in_vocab(self, word):
-        return word in self.words
+        # find the best tags with end tag
+        final_score = 0
+        final_prev = NO_TAG
 
-    def retrace(self, backpointer, last_tag, last_index):
-        path = []
-        pos = last_tag
-        index = last_index
-        back = backpointer[last_tag][last_index]
+        for tag in self.pos_tags:
+            score = viterbi[tag][length - 1] * self.trans_prob(tag, END_TAG)
+            if score > final_score:
+                final_score = score
+                final_prev = tag
 
-        print('last: ' + str(last_index))
+        return self.backtrack(final_prev, previous, length)
 
-        while not back == START_TAG:
-            print('index: ' + str(index) + ', pos: ' + pos)
-            pos = back
-            back = backpointer[pos][index]
+    def backtrack(self, final_pointer, backpointer, length):
+        path = [final_pointer]
+        ptr = final_pointer
+        index = length - 1
+        tag = backpointer[final_pointer][length - 1]
+
+        while tag != START_TAG:
+            path.insert(0, tag)
+            ptr = tag
             index -= 1
-
-            path.insert(0, pos)
+            tag = backpointer[ptr][index]
 
         return path
-
-    def max_likelihood(self, current_pos, word):
-        max_score = -1
-        max_prev_pos = NO_TAG
-
-        for prev_pos in self.pos_tags:
-            score = self.likelihood(current_pos, prev_pos, word)
-
-            if score > max_score:
-                max_score = score
-                max_prev_pos = prev_pos
-
-        return (max_score, max_prev_pos)
 
     def likelihood(self, pos, prev_pos, word):
         pos_given_prev = self.transition_table.get_prob(prev_pos, pos)
         pos_given_word = self.pos_word_table.get_prob(pos, word)
-        return pos_given_prev * pos_given_word
 
-def read_words_file(words_filename):
-    sentences = []
-    current_sentence = []
+        return (pos_given_prev * pos_given_word)
 
-    with open(words_filename, 'r') as words_file:
-        for line in words_file:
-            if not line.isspace():
-                current_sentence.append(line.strip().lower())
-            else:
-                sentences.append(current_sentence)
-                current_sentence = []
-        sentences.append(current_sentence)
+    def trans_prob(self, prev_pos, pos):
+        return self.transition_table.get_prob(prev_pos, pos)
 
-    return sentences
-
-
-# pos_tags = [*pos_word_table.table] # unpack keys to get all pos tags
-# print(read_pos_file('sentence.pos'))
-# print(read_words_file('sentence.words'))
+    def emit_prob(self, pos, word):
+        return self.pos_word_table.get_prob(pos, word)
 
 sentences = read_words_file('sentence.words')
-tagger = Tagger('WSJ_02-21.pos')
+tagger = Tagger('WSJ_24.pos')
 
 print('Sentence:')
 print(' '.join(sentences[0]))
@@ -132,9 +113,8 @@ print(len(sentences[0]))
 print('Tags:')
 tags = tagger.tag_sentence(sentences[0])
 print(tags)
-print(len(tags))
+# print(len(tags))
 
 print('Tagged sentence:')
 for i in range(len(sentences[0])):
-    print(sentences[0][i])
-    print('^ ' + tags[i])
+    print(sentences[0][i] + '\t' + tags[i])
