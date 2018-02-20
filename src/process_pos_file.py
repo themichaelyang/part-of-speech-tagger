@@ -15,7 +15,7 @@ def process_pos_file(pos_filename):
 
             if not line.isspace():
                 (word, pos) = line.strip().split()
-                pos_word_table.add(pos, word.lower())
+                pos_word_table.add(pos.strip(), word.lower())
             else:
                 # end of sentence
                 pos = END_TAG

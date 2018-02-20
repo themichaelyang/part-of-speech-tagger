@@ -2,11 +2,9 @@
 
 *Please note that this code uses Python 3.*
 
-To run this, type: `python main.py`
+To run this, type: `python main.py`.
 
-In the `main.py` file, there are several variables, which can be changed to train, test, and output different files.
-
-The tagger is located in `tagger.py`.
+In the `main.py` file, there are several variables, which can be changed to train, test, and output different files. The tagger is located in `tagger.py`.
 
 The program will also produce output for edge case sentences, and print all caught OOV words for debugging purposes. These can be toggled with the `debug` boolean in `tagger.py`.
 
