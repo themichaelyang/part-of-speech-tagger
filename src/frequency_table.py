@@ -16,13 +16,13 @@ class FrequencyTable:
 
     def get_prob(self, key1, key2):
         if key1 in self.table and key2 in self.table[key1]:
-            return (self.table[key1][key2] / self.totals[key1]) * 100000 # underflow hack fix
+            return (self.table[key1][key2] / self.totals[key1])
         else:
             return 0
 
     def get_unigram_prob(self, key1):
         if key1 in self.table:
-            return sum(self.table[key1].values()) / self.total * 100000
+            return (sum(self.table[key1].values()) / self.total)
         else:
             return 0
 

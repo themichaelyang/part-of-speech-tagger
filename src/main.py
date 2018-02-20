@@ -1,13 +1,18 @@
+# NLP HW 3: POS tagger
+# Michael Yang
+# Note to the grader: This code uses Python 3.
+
 from tagger import Tagger
 from process_pos_file import process_pos_file
 from read_words_file import read_words_file
 
 
 train = 'training/training.pos'
+# train = 'training/WSJ_02-21.pos'
 test = 'tests/WSJ_23.words'
-# test = 'tests/test5.words'
-# test = 'tests/rest.words'
-out = 'tests/my1532.pos'
+# test = 'tests/WSJ_24.words'
+out = 'output/my1532.pos'
+# solution = 'tests/WSJ_24.pos'
 
 
 def tag_file(training_filename, input_filename, output_filename):
@@ -27,6 +32,8 @@ def tag_file(training_filename, input_filename, output_filename):
             output_file.write('\n')
 
     print('Complete! Total tags: ' + str(count_tags) + '.')
+    # print('To test:')
+    # print('python tests/score.py ' + solution + ' ' + out)
 
 
 if __name__ == '__main__':

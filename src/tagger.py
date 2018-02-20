@@ -1,12 +1,3 @@
-# NLP HW 3: POS tagger
-# Michael Yang
-# Note to the grader: This code uses Python 3.
-
-# remember to add special cases:
-# - beginning of file (begin_sentence)
-# - empty line (begin_sentence, end_sentence)
-# - end of file (end_sentence)
-
 from tags import *
 
 
@@ -20,6 +11,8 @@ class Tagger:
 
         self.vocab = set()
         self.oov = set()
+        self.failed = 0
+
         for pos in self.pos_tags:
             self.vocab.update(self.pos_word_table.table[pos])
 
@@ -44,7 +37,7 @@ class Tagger:
 
         # init with start tag
         for tag in self.pos_tags:
-            word = sentence[0].lower()
+            word = self.convert(sentence[0])
             viterbi[tag][0] = self.trans_prob(START_TAG, tag) * self.emit_prob(tag, word)
             previous[tag][0] = START_TAG
 
@@ -52,7 +45,7 @@ class Tagger:
         length = len(sentence)
         for index in range(1, length):
             is_zero = True
-            word = sentence[index].lower()
+            word = self.convert(sentence[index])
 
             for tag in self.pos_tags:
                 max_score = 0
@@ -74,16 +67,16 @@ class Tagger:
                 best_prev_tag = NO_TAG
 
                 print('Failed on: ' + word)
-                for tag in self.pos_tags:
-                    score = viterbi[prev_tag][index - 1]
 
-                    if score > max_score:
-                        max_score = score
-                        best_prev_tag = prev_tag
-
-                viterbi[tag][index] = max_score
-                previous[tag][index] = best_prev_tag
-
+                # for tag in self.pos_tags:
+                #     score = viterbi[prev_tag][index - 1] * self.unigram_prob(tag)
+                #
+                #     if score > max_score:
+                #         max_score = score
+                #         best_prev_tag = prev_tag
+                #
+                # viterbi[tag][index] = max_score
+                # previous[tag][index] = best_prev_tag
 
         # find the best tags with end tag
         final_score = 0
@@ -95,19 +88,43 @@ class Tagger:
                 final_score = score
                 final_prev = tag
 
-        if final_score == 0:
-            for tag in self.pos_tags:
-                score = viterbi[tag][length - 1]
-                if score > final_score:
-                    final_score = score
-                    final_prev = tag
+        # if final_score == 0:
+        #     for tag in self.pos_tags:
+        #         score = viterbi[tag][length - 1]
+        #         if score > final_score:
+        #             final_score = score
+        #             final_prev = tag
 
-        return self.backtrack(final_prev, previous, length)
+        if not final_prev == NO_TAG:
+            return self.backtrack(final_prev, previous, length)
+        else:
+            print('failed: ')
+            print(sentence)
+            # print(viterbi)
+            # print()
+            # print(previous)
+             # could instead just use naive approach based on emission prob?
+            return self.naive_tag(sentence)
+            # return ['NN'] * len(sentence)
+
+    def naive_tag(self, sentence):
+        tags = []
+
+        for index in range(len(sentence)):
+            word = self.convert(sentence[index])
+
+            max_score = 0
+            max_pos_tag = NO_TAG
+            for pos in self.pos_tags:
+                score = self.emit_prob(pos, word)
+                if score > max_score:
+                    max_pos_tag = pos
+
+            tags.append(max_pos_tag)
+
+        return tags
 
     def backtrack(self, final_pointer, backpointer, length):
-        if final_pointer == NO_TAG:
-            print(self.sentence)
-
         path = [final_pointer]
         ptr = final_pointer
         index = length - 1
@@ -136,12 +153,25 @@ class Tagger:
             return self.pos_word_table.get_prob(pos, word)
         else:
             # handle OOV words
-            self.oov.update(word)
+            self.oov.add(word)
 
             if any(char.isdigit() for char in word) and pos == 'CD':
                 return 0.75
+            elif '-' in word and pos == 'JJ':
+                return 0.75
+            elif word[0].isupper():
+                if word[len(word) - 1] == 's' and pos == 'NNPS':
+                    return 0.75
+                elif pos == 'NNP':
+                    return 0.75
 
             return self.unigram_prob(pos)
 
     def unigram_prob(self, pos):
         return self.pos_word_table.get_unigram_prob(pos)
+
+    def convert(self, word):
+        if word.lower() in self.vocab:
+            return word.lower()
+        else:
+            return word
